@@ -16,7 +16,7 @@ Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md) (CLI POC
 | E6 MetaMask connect | ✅ connect, Sepolia guard, `accountsChanged`/`chainChanged` |
 | E7 Bridge form | ✅ selects, amount, balances, `quote()`, preflight — verified live |
 | E8 Send + tracking | ✅ 0.1 USDC bridged live, L2 delta = amount entered |
-| E9 Frontend documentation | ⏳ not started |
+| E9 Frontend documentation | ✅ README frontend section, ADR-0002 finalized |
 
 **Result:** L1 [`0xa3e7742d…`](https://sepolia.etherscan.io/tx/0xa3e7742d7644fa6382f8d75339269c5c5d2f68c2011f8bd847efcfda5cc50c82)
 → L2 [`0x1d828333…`](https://zksync-os-testnet-xsolla.explorer.zksync.dev/tx/0x1d828333a64fbf969c32c8b1704fc49d31e99143774f5c29d40c505819a24129),
@@ -142,6 +142,17 @@ Gotchas found and documented (ADR-0002 D14–D15): `deposits.status({l1TxHash})`
 `wait()`) for live phase updates; a type cast needed at the `writeContract(step.tx)` call site
 because the SDK's `ViemPlanWriteRequest` widens `value` in a way viem's own overloads can't infer.
 
+## E9 — Frontend documentation ✅
+
+- [x] T9.1 [README.md](README.md) — "Frontend (browser UI)" section: how to run it, the flow, what's
+      out of scope, and the live 0.1 USDC result
+- [x] T9.2 [docs/ADR-0002-bridge-frontend.md](docs/ADR-0002-bridge-frontend.md) finalized — D1–D15
+      cover every decision confirmed by the customer plus every gotcha found while building E5–E8
+- [x] T9.3 This plan, kept current epic by epic throughout E5–E9
+
+No other documents — CLAUDE.md rule 3 ("не заниматься бюрократией: документы только те, что
+перечислены") applies to the frontend the same as it did to the CLI POC.
+
 ## Open follow-ups (not part of this POC)
 
 - [ ] **Recover 5 USDC** from the failed attempt via `L1Nullifier.claimFailedDeposit`. Not exposed
@@ -150,7 +161,9 @@ because the SDK's `ViemPlanWriteRequest` widens `value` in a way viem's own over
       ZKsync OS chains (362,493 estimated vs 431,200 required).
 - [ ] Upstream issue: `DepositQuote.mintValue` deprecation points at `fees.components?.mintValue`,
       which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
+
 ## Review gate
 
-E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5/E6/E7 committed on
-`feat/usdc-bridge-frontend`. E8 is **not yet committed** — awaiting review per working rules.
+E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed).
+E5–E9 (`feat/usdc-bridge-frontend`, epic complete) awaiting your review before merge/push — nothing
+past this point has been pushed to `origin`.
