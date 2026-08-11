@@ -107,11 +107,17 @@ export function useWallet() {
   }, []);
 
   const walletClient = useMemo(() => {
-    if (typeof window === 'undefined' || !window.ethereum || state.status !== 'connected') {
+    if (typeof window === 'undefined' || !window.ethereum || !state.address) {
       return null;
     }
-    return createWalletClient({ chain: l1Chain, transport: custom(window.ethereum) });
-  }, [state.status]);
+    // `account` must be set explicitly (not left for the provider's default) — the
+    // zksync-js viem adapter requires WalletClient<Transport, Chain, Account>, see ADR-0002 D12.
+    return createWalletClient({
+      account: state.address,
+      chain: l1Chain,
+      transport: custom(window.ethereum),
+    });
+  }, [state.address]);
 
   const isWrongNetwork = state.status === 'connected' && state.chainId !== l1Chain.id;
 

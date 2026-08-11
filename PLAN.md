@@ -14,7 +14,7 @@ Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md) (CLI POC
 | E4 Documentation | ✅ ADR + README + this plan |
 | E5 Frontend scaffold | ✅ Vite + React 19 + TS, `XUIProvider` dark/b2b, page shell, gate green |
 | E6 MetaMask connect | ✅ connect, Sepolia guard, `accountsChanged`/`chainChanged` |
-| E7 Bridge form | ⏳ not started |
+| E7 Bridge form | ✅ selects, amount, balances, `quote()`, preflight — verified live |
 | E8 Send + tracking | ⏳ not started |
 | E9 Frontend documentation | ⏳ not started |
 
@@ -100,6 +100,25 @@ it never paints a background itself. The sandboxed preview browser used while bu
 masked this (it defaults to a black canvas). Fixed by applying
 `useDesignSystem().theme.colors.background.primary` to the page wrapper. See ADR-0002 D11.
 
+## E7 — Bridge form ✅
+
+- [x] T7.1 `web/src/bridge/clients.ts` — L1/L2 viem `PublicClient`s, same public RPCs as the CLI
+- [x] T7.2 `web/src/bridge/useBridgeQuote.ts` — balances (ETH/USDC/XZK L1, USDC L2), debounced
+      `sdk.deposits.quote()`, same four preflight checks as `src/bridge.ts`'s dry run
+- [x] T7.3 `useWallet.ts`'s `WalletClient` now carries an explicit `account` (ADR-0002 D12) — needed
+      by `createViemClient`'s `WalletClient<Transport, Chain, Account>` type
+- [x] T7.4 `App.tsx`: disabled `Select`×2 ("From" Sepolia / "To" Xsolla ZK Testnet — only route
+      this POC supports), `Input` for amount, `Cell` rows for balances and quote, `Status` rows +
+      `Notification` for preflight/readiness
+
+**Verified live** in a real Chrome window with the funded wallet:
+- Balances matched known on-chain state exactly (L1 10 USDC / ~100 XZK / 0.0487 ETH, L2 5 USDC —
+  the amount from the E3 CLI bridge)
+- `quote()` for 0.1 USDC returned `erc20-nonbase`, `mintValue` 0.000797479059 XZK, `l2GasLimit`
+  3,000,000, 2 approvals — matches ADR-0001's live result shape
+- Preflight: all 4 checks green at 0.1 USDC → "Ready to send"; entering 20 USDC (> 10 USDC balance)
+  flipped the balance check red and the summary to "Not ready to send" — both directions confirmed
+
 ## Open follow-ups (not part of this POC)
 
 - [ ] **Recover 5 USDC** from the failed attempt via `L1Nullifier.claimFailedDeposit`. Not exposed
@@ -110,5 +129,5 @@ masked this (it defaults to a black canvas). Fixed by applying
       which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
 ## Review gate
 
-E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5 committed on
-`feat/usdc-bridge-frontend`. E6 is **not yet committed** — awaiting review per working rules.
+E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5/E6 committed on
+`feat/usdc-bridge-frontend`. E7 is **not yet committed** — awaiting review per working rules.

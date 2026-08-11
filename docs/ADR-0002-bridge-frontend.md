@@ -137,6 +137,22 @@ building E5/E6 happened to render a black canvas by default, masking the bug; it
 once tested in a real Chrome window (white background by default). Lesson: verify toolkit-dark-mode
 pages in a real browser, not just the sandboxed preview.
 
+### D12. `WalletClient` needs an explicit `account`, not the provider's default
+
+`createViemClient({l1, l2, l1Wallet})` (from `@matterlabs/zksync-js/viem`) types `l1Wallet` as
+`WalletClient<Transport, Chain, Account>` — the `Account` generic must be concrete. A
+`createWalletClient({chain, transport: custom(window.ethereum)})` without an `account` field
+resolves to `WalletClient<Transport, Chain, undefined>` and fails to satisfy it, even though the
+underlying EIP-1193 provider has a perfectly good active account. Fix: pass
+`account: state.address` explicitly in `useWallet.ts`.
+
+### D13. `web/src/bridge/` mirrors `src/bridge.ts`'s read path, not the send path
+
+`web/src/bridge/clients.ts` (module-level `l1`/`l2` viem `PublicClient`s, same RPCs as the CLI) and
+`useBridgeQuote.ts` (balances, debounced `sdk.deposits.quote()`, and the same four preflight checks
+as `src/bridge.ts`'s dry run) cover E7's scope only — reads and a quote, no signing. `prepare()`
+and the step-by-step send loop (ADR-0002 D7) are E8.
+
 ## Consequences
 
 - Frontend and CLI POC share one `package.json` and one source of on-chain truth
