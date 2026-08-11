@@ -1,9 +1,11 @@
 # USDC bridge POC — Ethereum Sepolia → Xsolla ZK Testnet
 
-Bridges USDC to Xsolla ZK Testnet (chain `579029`) via `@matterlabs/zksync-js`, and verifies the
-generated calldata against a transaction that provably worked.
+Bridges USDC to Xsolla ZK Testnet (chain `579029`) via `@matterlabs/zksync-js`. Two front ends onto
+the same on-chain logic and facts (`src/config.ts`): a CLI script that verifies its calldata
+against a transaction that provably worked, and a browser UI with MetaMask.
 
-- Decisions and on-chain facts: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md)
+- CLI decisions and on-chain facts: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md)
+- Frontend decisions: [docs/ADR-0002-bridge-frontend.md](docs/ADR-0002-bridge-frontend.md)
 - Progress: [PLAN.md](PLAN.md)
 
 ## Prerequisites
@@ -53,6 +55,31 @@ Bridged 5 USDC on 2026-08-11:
 L1 [`0xa3e7742d…`](https://sepolia.etherscan.io/tx/0xa3e7742d7644fa6382f8d75339269c5c5d2f68c2011f8bd847efcfda5cc50c82)
 → L2 [`0x1d828333…`](https://zksync-os-testnet-xsolla.explorer.zksync.dev/tx/0x1d828333a64fbf969c32c8b1704fc49d31e99143774f5c29d40c505819a24129).
 L2 gas consumed 431,200; `mintValue` 0.00079 XZK.
+
+## Frontend (browser UI)
+
+A Vite + React 19 + TypeScript app in [web/](web/), using Xsolla's `@xsolla/xui-*` toolkit (dark,
+b2b) and bare MetaMask (no wagmi). Same `package.json`, same `src/config.ts` as the CLI — see
+[ADR-0002](docs/ADR-0002-bridge-frontend.md) for why and what it cost to get working.
+
+```bash
+bun run dev       # http://localhost:5173, hot reload
+bun run build     # tsc --noEmit && vite build → dist/
+bun run preview   # serve the production build
+```
+
+Flow: connect MetaMask → guard for the Sepolia network → pick an amount → live balances and a
+`quote()` → preflight checks → **Send**, which walks a 3-step stepper (approve USDC → approve XZK
+→ bridge tx) with each step confirmed individually in MetaMask, then polls L2 execution status and
+shows both tx hashes with explorer links.
+
+Deposit only — no withdrawal, no recovery of the 5 USDC stuck from the CLI POC's first failed
+attempt (see ADR-0001 Consequences). One route only (Sepolia → Xsolla ZK Testnet); the network
+selectors in the UI are disabled, not a real choice, because that's the only route this POC covers.
+
+Verified live end to end (2026-08-11) with wallet `0x26e99F6e94B983e0adD40E296D4f5788e67C9F69`:
+bridged 0.1 USDC through the UI, L2 balance moved 5.0 → 5.1 USDC — the delta matched the amount
+typed into the form, confirmed independently via a direct `eth_call` from the browser console.
 
 ## What the dry run proves
 
