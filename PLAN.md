@@ -13,7 +13,7 @@ Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md) (CLI POC
 | E3 Live bridge | ✅ 5 USDC delivered on L2 |
 | E4 Documentation | ✅ ADR + README + this plan |
 | E5 Frontend scaffold | ✅ Vite + React 19 + TS, `XUIProvider` dark/b2b, page shell, gate green |
-| E6 MetaMask connect | ⏳ not started |
+| E6 MetaMask connect | ✅ connect, Sepolia guard, `accountsChanged`/`chainChanged` |
 | E7 Bridge form | ⏳ not started |
 | E8 Send + tracking | ⏳ not started |
 | E9 Frontend documentation | ⏳ not started |
@@ -52,15 +52,6 @@ phase `L2_EXECUTED`, L2 USDC balance 0 → 5.
 - [x] T4.2 README
 - [x] T4.3 Result recorded here and in the ADR
 
-## Open follow-ups (not part of this POC)
-
-- [ ] **Recover 5 USDC** from the failed attempt via `L1Nullifier.claimFailedDeposit`. Not exposed
-      as an SDK method — needs a manual call with the L2→L1 log proof of L2 tx `0x088e6102…`.
-- [ ] Upstream issue: `determineErc20L2Gas` underestimates `l2GasLimit` for `erc20-nonbase` on
-      ZKsync OS chains (362,493 estimated vs 431,200 required).
-- [ ] Upstream issue: `DepositQuote.mintValue` deprecation points at `fees.components?.mintValue`,
-      which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
-
 ## E5 — Frontend scaffold ✅
 
 Branch `feat/usdc-bridge-frontend`, off `feat/usdc-bridge-sepolia-to-xsolla-zk` (`756f764`).
@@ -83,6 +74,21 @@ Gotcha found and fixed: `Typography`'s `color` prop defaults to CSS `inherit`, n
 foreground — without an explicit `color` (e.g. `"primary"`) text renders black-on-black in dark
 mode. See ADR-0002.
 
+## E6 — MetaMask connect ✅
+
+- [x] T6.1 `web/src/wallet/eip1193.ts` — `Window.ethereum` typing + `getInjectedProvider()`
+- [x] T6.2 `web/src/wallet/useWallet.ts` — `connect()`, Sepolia network guard (`switchToL1`,
+      falls back to `wallet_addEthereumChain` on error 4902), `accountsChanged`/`chainChanged`
+      listeners, memoized viem `WalletClient` for E7/E8
+- [x] T6.3 Wired into `App.tsx`: `Button` (connect), `Status` (connected/wrong-network),
+      `InputCopy readOnly` (address), `Notification type="inline"` (wrong-network action, errors)
+
+**Verified:** `bun run build` green; in-browser, clicking "Connect MetaMask" with no injected
+wallet shows the expected inline error notification (confirms the error path end-to-end). **Not
+verified:** the actual MetaMask connect/switch-network/`accountsChanged` flow — the in-app preview
+browser has no MetaMask extension. Needs a manual pass in a real browser with the funded wallet
+before E6 is considered fully proven live.
+
 ## Open follow-ups (not part of this POC)
 
 - [ ] **Recover 5 USDC** from the failed attempt via `L1Nullifier.claimFailedDeposit`. Not exposed
@@ -91,8 +97,10 @@ mode. See ADR-0002.
       ZKsync OS chains (362,493 estimated vs 431,200 required).
 - [ ] Upstream issue: `DepositQuote.mintValue` deprecation points at `fees.components?.mintValue`,
       which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
+- [ ] E6's MetaMask connect/network-switch flow needs manual verification in a real browser with
+      the funded wallet — not testable in the headless preview browser (no extension support).
 
 ## Review gate
 
-E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5 is on
-`feat/usdc-bridge-frontend`, **not yet committed** — awaiting review per working rules.
+E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5 committed on
+`feat/usdc-bridge-frontend`. E6 is **not yet committed** — awaiting review per working rules.

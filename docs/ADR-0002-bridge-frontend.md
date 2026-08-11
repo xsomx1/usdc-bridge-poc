@@ -109,6 +109,20 @@ needed.
   `color` (e.g. `color="primary"`) renders black-on-black in dark mode. Every `Typography` in the
   app needs an explicit `color`.
 
+### D10. Wallet module: `web/src/wallet/eip1193.ts` + `useWallet.ts`
+
+`eip1193.ts` augments `Window.ethereum: EIP1193Provider` (type from `viem`) and exposes
+`getInjectedProvider()`, which throws a user-facing error instead of a raw `undefined` access when
+no wallet is injected.
+
+`useWallet.ts` is one hook: `connect()` (`eth_requestAccounts` + `eth_chainId`), `switchToL1()`
+(`wallet_switchEthereumChain`, falling back to `wallet_addEthereumChain` on error code `4902`), and
+a `useEffect` mirroring the wallet's own `accountsChanged` / `chainChanged` events into state (so
+switching accounts or networks from MetaMask's own UI is reflected, not just switches initiated by
+our buttons). `isWrongNetwork` is derived (`chainId !== l1Chain.id`, from `src/config.ts`). Exposes
+a memoized viem `WalletClient` (`createWalletClient({chain: l1Chain, transport: custom(...)})`) for
+E7/E8 to send transactions with, only once connected on the right chain.
+
 ## Consequences
 
 - Frontend and CLI POC share one `package.json` and one source of on-chain truth
