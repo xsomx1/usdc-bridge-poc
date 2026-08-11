@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   formatEther,
   formatUnits,
-  parseAbi,
   parseUnits,
   type Account,
   type Address,
@@ -15,11 +14,7 @@ import { createViemClient, createViemSdk } from '@matterlabs/zksync-js/viem';
 // Same on-chain facts as the CLI POC — see ADR-0002 D8.
 import { L2_GAS_LIMIT, USDC_DECIMALS, USDC_L1, USDC_L2, XZK_L1 } from '../../../src/config';
 import { l1PublicClient, l2PublicClient } from './clients';
-
-const erc20 = parseAbi([
-  'function balanceOf(address) view returns (uint256)',
-  'function allowance(address,address) view returns (uint256)',
-]);
+import { erc20 } from './erc20';
 
 export interface Balances {
   ethL1: bigint;

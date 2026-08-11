@@ -153,6 +153,24 @@ underlying EIP-1193 provider has a perfectly good active account. Fix: pass
 as `src/bridge.ts`'s dry run) cover E7's scope only — reads and a quote, no signing. `prepare()`
 and the step-by-step send loop (ADR-0002 D7) are E8.
 
+### D14. `useBridgeSend` tracks L2 by polling `deposits.status({l1TxHash})`, not `wait()`
+
+`sdk.deposits.wait(handle, {for: 'l2'})` (used by the CLI's one-shot dry-run/send) blocks until
+resolution with no intermediate signal. The UI needs to show the live phase
+(`L1_PENDING → L1_INCLUDED → L2_PENDING → L2_EXECUTED`), so `useBridgeSend` polls
+`sdk.deposits.status({l1TxHash: bridgeTxHash})` on a 4s interval instead, updating `l2Phase` each
+tick. `{l1TxHash}` is a valid `DepositWaitable` on its own — no `Handle` object needed since the
+steps were sent manually (ADR-0002 D7), not via `create()`.
+
+### D15. `writeContract(step.tx)` needs a cast — `ViemPlanWriteRequest`'s relaxed `value` breaks overload inference
+
+`plan.steps[i].tx` is typed as `ViemPlanWriteRequest` (`Omit<WriteContractParameters, 'value'> &
+{value?: bigint}`) — deliberately relaxed by the SDK so one type covers both payable and
+non-payable steps. viem's `writeContract` has separate overloads keyed on whether `value` is
+allowed at all, and can't resolve which one applies to the widened type. Cast to
+`Parameters<typeof walletClient.writeContract>[0]` at the call site; the SDK's own type guarantees
+the shape is otherwise correct.
+
 ## Consequences
 
 - Frontend and CLI POC share one `package.json` and one source of on-chain truth

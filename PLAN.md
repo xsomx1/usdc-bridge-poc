@@ -15,7 +15,7 @@ Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md) (CLI POC
 | E5 Frontend scaffold | ✅ Vite + React 19 + TS, `XUIProvider` dark/b2b, page shell, gate green |
 | E6 MetaMask connect | ✅ connect, Sepolia guard, `accountsChanged`/`chainChanged` |
 | E7 Bridge form | ✅ selects, amount, balances, `quote()`, preflight — verified live |
-| E8 Send + tracking | ⏳ not started |
+| E8 Send + tracking | ✅ 0.1 USDC bridged live, L2 delta = amount entered |
 | E9 Frontend documentation | ⏳ not started |
 
 **Result:** L1 [`0xa3e7742d…`](https://sepolia.etherscan.io/tx/0xa3e7742d7644fa6382f8d75339269c5c5d2f68c2011f8bd847efcfda5cc50c82)
@@ -119,6 +119,29 @@ masked this (it defaults to a black canvas). Fixed by applying
 - Preflight: all 4 checks green at 0.1 USDC → "Ready to send"; entering 20 USDC (> 10 USDC balance)
   flipped the balance check red and the summary to "Not ready to send" — both directions confirmed
 
+## E8 — Send + tracking ✅
+
+- [x] T8.1 `web/src/bridge/useBridgeSend.ts` — manual step loop: `prepare()` once, then
+      `writeContract(step.tx)` per step (ADR-0002 D7), waiting for each L1 receipt before the next
+      step; the bridgehub step's tx hash is tracked separately for L2
+- [x] T8.2 L2 tracking via polled `sdk.deposits.status({l1TxHash})` (4s interval, ADR-0002 D14),
+      not the CLI's one-shot `wait()` — the UI needs the intermediate phase, not just the end state
+- [x] T8.3 `App.tsx`: `Stepper` (vertical, `surface`) mapped from live step state, `InputCopy` +
+      `Link` for L1/L2 tx hashes, `Result variant="modal"` for the final outcome with a "Start
+      another bridge" reset
+
+**Gate met — verified live** with the funded wallet, amount 0.1 USDC:
+- All 3 steps (approve USDC → approve XZK → `bridgehub:two-bridges`) confirmed in MetaMask and
+  tracked to "done" in the stepper in order
+- L1 tx and L2 tx hashes shown with working explorer links
+- `Result`: "Bridge complete", **L2 balance delta: 0.1 USDC** — the amount entered, not a constant
+- Independently confirmed via a direct `eth_call` to `USDC_L2.balanceOf` from the browser:
+  5.0 → 5.1 USDC, exactly +0.1
+
+Gotchas found and documented (ADR-0002 D14–D15): `deposits.status({l1TxHash})` polling (not
+`wait()`) for live phase updates; a type cast needed at the `writeContract(step.tx)` call site
+because the SDK's `ViemPlanWriteRequest` widens `value` in a way viem's own overloads can't infer.
+
 ## Open follow-ups (not part of this POC)
 
 - [ ] **Recover 5 USDC** from the failed attempt via `L1Nullifier.claimFailedDeposit`. Not exposed
@@ -129,5 +152,5 @@ masked this (it defaults to a black canvas). Fixed by applying
       which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
 ## Review gate
 
-E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5/E6 committed on
-`feat/usdc-bridge-frontend`. E7 is **not yet committed** — awaiting review per working rules.
+E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5/E6/E7 committed on
+`feat/usdc-bridge-frontend`. E8 is **not yet committed** — awaiting review per working rules.

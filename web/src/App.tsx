@@ -11,12 +11,32 @@ import { Select } from '@xsolla/xui-select';
 import { Cell } from '@xsolla/xui-cell';
 import { Divider } from '@xsolla/xui-divider';
 import { Spinner } from '@xsolla/xui-spinner';
+import { Stepper, type StepStateType } from '@xsolla/xui-b2b-stepper';
+import { Result } from '@xsolla/xui-b2b-result';
+import { Link } from '@xsolla/xui-link';
 import { Wallet as WalletIcon } from '@xsolla/xui-icons-base';
 import { formatEther, formatUnits } from 'viem';
 
-import { USDC_DECIMALS, USDC_L1, USDC_L2, l1Chain, xsollaZkTestnet } from '../../src/config';
+import {
+  EXPLORER_L1,
+  EXPLORER_L2,
+  USDC_DECIMALS,
+  USDC_L1,
+  USDC_L2,
+  l1Chain,
+  xsollaZkTestnet,
+} from '../../src/config';
 import { useWallet } from './wallet/useWallet';
 import { useBridgeQuote } from './bridge/useBridgeQuote';
+import { useBridgeSend, type StepStatus } from './bridge/useBridgeSend';
+
+const STEP_STATE: Record<StepStatus, StepStateType> = {
+  pending: 'incomplete',
+  sending: 'loading',
+  confirming: 'loading',
+  done: 'complete',
+  error: 'alert',
+};
 
 // Viewport centering is the one job the toolkit has no component for —
 // see ADR-0002 D3. Everything below this wrapper is FieldGroup-only.
@@ -49,12 +69,20 @@ export function App() {
     balances,
     balancesLoading,
     balancesError,
+    refreshBalances,
     quote,
     quoteLoading,
     quoteError,
     preflight,
     ready,
   } = useBridgeQuote({ walletClient: canBridge ? walletClient : null, address });
+
+  const sendState = useBridgeSend({
+    walletClient: canBridge ? walletClient : null,
+    address,
+    onSettled: refreshBalances,
+  });
+  const sending = sendState.phase !== 'idle' && sendState.phase !== 'done' && sendState.phase !== 'error';
 
   return (
     <PageWrapper $background={theme.colors.background.primary}>
@@ -111,7 +139,7 @@ export function App() {
             placeholder="0.0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            disabled={!canBridge}
+            disabled={!canBridge || sending}
           />
           <Typography variant="bodySm" color="tertiary">
             USDC {USDC_L1} (L1) → {USDC_L2} (L2)
@@ -200,6 +228,76 @@ export function App() {
                     tone={ready ? 'success' : 'warning'}
                     message={ready ? 'Ready to send.' : 'Not ready to send — see checks above.'}
                   />
+                </>
+              )}
+
+              {ready && sendState.phase === 'idle' && (
+                <Button variant="primary" onPress={() => sendState.send(amount)}>
+                  Send
+                </Button>
+              )}
+
+              {sendState.steps.length > 0 && (
+                <>
+                  <Divider title="Send" titlePosition="left" />
+                  <Stepper
+                    direction="vertical"
+                    surface
+                    steps={sendState.steps.map((step) => ({
+                      key: step.key,
+                      title: step.description,
+                      caption: step.kind,
+                      state: STEP_STATE[step.status],
+                    }))}
+                  />
+
+                  {sendState.phase === 'waiting-l2' && (
+                    <FieldGroup flexDirection="row" gap={8}>
+                      <Spinner size="sm" />
+                      <Typography variant="bodySm" color="secondary">
+                        Waiting for L2 execution{sendState.l2Phase ? ` (${sendState.l2Phase})` : ''}…
+                      </Typography>
+                    </FieldGroup>
+                  )}
+
+                  {sendState.l1TxHash && (
+                    <InputCopy readOnly label="L1 tx" value={sendState.l1TxHash} />
+                  )}
+                  {sendState.l1TxHash && (
+                    <Link href={`${EXPLORER_L1}/tx/${sendState.l1TxHash}`} target="_blank" rel="noopener noreferrer">
+                      View on {EXPLORER_L1.replace('https://', '')}
+                    </Link>
+                  )}
+                  {sendState.l2TxHash && (
+                    <InputCopy readOnly label="L2 tx" value={sendState.l2TxHash} />
+                  )}
+                  {sendState.l2TxHash && (
+                    <Link href={`${EXPLORER_L2}/tx/${sendState.l2TxHash}`} target="_blank" rel="noopener noreferrer">
+                      View on {EXPLORER_L2.replace('https://', '')}
+                    </Link>
+                  )}
+
+                  {sendState.phase === 'done' && (
+                    <Result
+                      variant="modal"
+                      title="Bridge complete"
+                      description={
+                        sendState.delta !== null
+                          ? `L2 balance delta: ${formatUnits(sendState.delta, USDC_DECIMALS)} USDC`
+                          : undefined
+                      }
+                      primaryAction={<Button onPress={sendState.reset}>Start another bridge</Button>}
+                    />
+                  )}
+
+                  {sendState.phase === 'error' && (
+                    <Result
+                      variant="modal"
+                      title="Bridge failed"
+                      description={sendState.error ?? undefined}
+                      primaryAction={<Button onPress={sendState.reset}>Try again</Button>}
+                    />
+                  )}
                 </>
               )}
             </>
