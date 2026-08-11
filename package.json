@@ -7,7 +7,7 @@
   "scripts": {
     "bridge:dry": "bun run src/bridge.ts --dry-run",
     "bridge:send": "bun run src/bridge.ts --send",
-    "verify": "bun run src/verify.ts",
+    "diag": "bun run src/diag.ts",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"

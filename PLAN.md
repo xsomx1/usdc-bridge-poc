@@ -18,9 +18,17 @@ Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md) (CLI POC
 | E8 Send + tracking | ✅ 0.1 USDC bridged live, L2 delta = amount entered |
 | E9 Frontend documentation | ✅ README frontend section, ADR-0002 finalized |
 
-**Result:** L1 [`0xa3e7742d…`](https://sepolia.etherscan.io/tx/0xa3e7742d7644fa6382f8d75339269c5c5d2f68c2011f8bd847efcfda5cc50c82)
-→ L2 [`0x1d828333…`](https://zksync-os-testnet-xsolla.explorer.zksync.dev/tx/0x1d828333a64fbf969c32c8b1704fc49d31e99143774f5c29d40c505819a24129),
-phase `L2_EXECUTED`, L2 USDC balance 0 → 5.
+**Result — both front ends bridged live on 2026-08-11**, wallet
+`0x26e99F6e94B983e0adD40E296D4f5788e67C9F69`:
+
+| Path | L1 tx | L2 tx | Amount | L2 USDC |
+|---|---|---|---|---|
+| CLI (E3) | [`0xa3e7742d…`](https://sepolia.etherscan.io/tx/0xa3e7742d7644fa6382f8d75339269c5c5d2f68c2011f8bd847efcfda5cc50c82) | [`0x1d828333…`](https://zksync-os-testnet-xsolla.explorer.zksync.dev/tx/0x1d828333a64fbf969c32c8b1704fc49d31e99143774f5c29d40c505819a24129) | 5 USDC | 0 → 5 |
+| Browser UI (E8) | [`0xcde2c14c…`](https://sepolia.etherscan.io/tx/0xcde2c14c95a6856a73190617a3d7bad618c0d9f58c85f316578f2b72ea2579d6) | [`0xa5d89206…`](https://zksync-os-testnet-xsolla.explorer.zksync.dev/tx/0xa5d8920639f7229503aa4a2497a9a42af04c35986c057475c5de003dec81f16b) | 0.1 USDC | 5 → 5.1 |
+
+Both reached phase `L2_EXECUTED` and consumed L2 `gasUsed` 431,200 — identical, which is the
+measurement ADR-0001 D3 rests on (the `bridgeMint` cost does not depend on the amount, so the
+pinned `l2GasLimit` of 3,000,000 holds for both).
 
 ## E1 — Environment ✅
 
@@ -133,7 +141,10 @@ masked this (it defaults to a black canvas). Fixed by applying
 **Gate met — verified live** with the funded wallet, amount 0.1 USDC:
 - All 3 steps (approve USDC → approve XZK → `bridgehub:two-bridges`) confirmed in MetaMask and
   tracked to "done" in the stepper in order
-- L1 tx and L2 tx hashes shown with working explorer links
+- L1 [`0xcde2c14c…`](https://sepolia.etherscan.io/tx/0xcde2c14c95a6856a73190617a3d7bad618c0d9f58c85f316578f2b72ea2579d6)
+  (block 11,467,310, `gasUsed` 513,254) → L2
+  [`0xa5d89206…`](https://zksync-os-testnet-xsolla.explorer.zksync.dev/tx/0xa5d8920639f7229503aa4a2497a9a42af04c35986c057475c5de003dec81f16b)
+  (block 720,619, `gasUsed` 431,200), both `success`; shown in the UI with working explorer links
 - `Result`: "Bridge complete", **L2 balance delta: 0.1 USDC** — the amount entered, not a constant
 - Independently confirmed via a direct `eth_call` to `USDC_L2.balanceOf` from the browser:
   5.0 → 5.1 USDC, exactly +0.1
@@ -164,6 +175,7 @@ No other documents — CLAUDE.md rule 3 ("не заниматься бюрокр
 
 ## Review gate
 
-E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed).
-E5–E9 (`feat/usdc-bridge-frontend`, epic complete) awaiting your review before merge/push — nothing
-past this point has been pushed to `origin`.
+Reviewed and merged. E1–E9 are on `main` (`9c9d0c8`, pushed); `main` is the repository's default
+branch. Both feature branches — `feat/usdc-bridge-sepolia-to-xsolla-zk` (E1–E4, `756f764`) and
+`feat/usdc-bridge-frontend` (E5–E9, `984d92b`) — are ancestors of `main` and remain on `origin` for
+history; their local copies were deleted after the merge.
