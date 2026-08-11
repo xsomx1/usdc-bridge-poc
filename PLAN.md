@@ -1,9 +1,10 @@
 # Plan — USDC bridge Sepolia → Xsolla ZK Testnet
 
 Living document. Updated 2026-08-11.
-Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md)
+Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md) (CLI POC),
+[docs/ADR-0002-bridge-frontend.md](docs/ADR-0002-bridge-frontend.md) (frontend)
 
-## Status — done ✅
+## Status
 
 | Epic | State |
 |---|---|
@@ -11,6 +12,11 @@ Decisions: [docs/ADR-0001-usdc-bridge.md](docs/ADR-0001-usdc-bridge.md)
 | E2 Bridge script | ✅ calldata structurally identical to the reference tx |
 | E3 Live bridge | ✅ 5 USDC delivered on L2 |
 | E4 Documentation | ✅ ADR + README + this plan |
+| E5 Frontend scaffold | ✅ Vite + React 19 + TS, `XUIProvider` dark/b2b, page shell, gate green |
+| E6 MetaMask connect | ⏳ not started |
+| E7 Bridge form | ⏳ not started |
+| E8 Send + tracking | ⏳ not started |
+| E9 Frontend documentation | ⏳ not started |
 
 **Result:** L1 [`0xa3e7742d…`](https://sepolia.etherscan.io/tx/0xa3e7742d7644fa6382f8d75339269c5c5d2f68c2011f8bd847efcfda5cc50c82)
 → L2 [`0x1d828333…`](https://zksync-os-testnet-xsolla.explorer.zksync.dev/tx/0x1d828333a64fbf969c32c8b1704fc49d31e99143774f5c29d40c505819a24129),
@@ -55,7 +61,38 @@ phase `L2_EXECUTED`, L2 USDC balance 0 → 5.
 - [ ] Upstream issue: `DepositQuote.mintValue` deprecation points at `fees.components?.mintValue`,
       which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
 
+## E5 — Frontend scaffold ✅
+
+Branch `feat/usdc-bridge-frontend`, off `feat/usdc-bridge-sepolia-to-xsolla-zk` (`756f764`).
+
+- [x] T5.0 Branch + `docs/ADR-0002-bridge-frontend.md` with all confirmed decisions
+- [x] T5.1 Vite + React 19 + TS + styled-components@6 added to root `package.json`;
+      `dev` / `build` / `preview` scripts alongside `bridge:dry` / `bridge:send`; frontend code in
+      `web/`
+- [x] T5.2 `XUIProvider` (dark, b2b) + page shell on `FieldGroup`; empty form placeholder, no logic
+- [x] T5.3 `src/config.ts` imported directly into `web/src/App.tsx`; `process.env` shimmed to `{}`
+      via `vite.config.ts` `define` (browser has no `process`; config.ts's own `??` fallbacks
+      apply) — `src/config.ts` itself untouched
+- [x] T5.4 `@xsolla/xui-select`'s real API checked against the shipped `.d.ts` — confirmed
+      adequate for the two network selectors (ADR-0002 D9), no alternative needed
+
+**Gate:** `bun run build` green (`tsc --noEmit && vite build`); `bun run dev` serves the page;
+verified in-browser — dark theme, `Pilat`/`Aktiv Grotesk` fonts loaded from `cdn.xsolla.net`.
+
+Gotcha found and fixed: `Typography`'s `color` prop defaults to CSS `inherit`, not a theme
+foreground — without an explicit `color` (e.g. `"primary"`) text renders black-on-black in dark
+mode. See ADR-0002.
+
+## Open follow-ups (not part of this POC)
+
+- [ ] **Recover 5 USDC** from the failed attempt via `L1Nullifier.claimFailedDeposit`. Not exposed
+      as an SDK method — needs a manual call with the L2→L1 log proof of L2 tx `0x088e6102…`.
+- [ ] Upstream issue: `determineErc20L2Gas` underestimates `l2GasLimit` for `erc20-nonbase` on
+      ZKsync OS chains (362,493 estimated vs 431,200 required).
+- [ ] Upstream issue: `DepositQuote.mintValue` deprecation points at `fees.components?.mintValue`,
+      which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
+
 ## Review gate
 
-Nothing has been committed in either repo. Both working trees are on
-`feat/usdc-bridge-sepolia-to-xsolla-zk` awaiting review.
+E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5 is on
+`feat/usdc-bridge-frontend`, **not yet committed** — awaiting review per working rules.

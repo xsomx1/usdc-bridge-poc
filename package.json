@@ -7,10 +7,41 @@
   "scripts": {
     "bridge:dry": "bun run src/bridge.ts --dry-run",
     "bridge:send": "bun run src/bridge.ts --send",
-    "verify": "bun run src/verify.ts"
+    "verify": "bun run src/verify.ts",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@matterlabs/zksync-js": "0.0.20",
+    "@xsolla/xui-b2b-result": "0.202.3",
+    "@xsolla/xui-b2b-stepper": "0.202.3",
+    "@xsolla/xui-button": "0.202.3",
+    "@xsolla/xui-cell": "0.202.3",
+    "@xsolla/xui-core": "0.202.3",
+    "@xsolla/xui-divider": "0.202.3",
+    "@xsolla/xui-field-group": "0.202.3",
+    "@xsolla/xui-icons-base": "0.202.3",
+    "@xsolla/xui-input": "0.202.3",
+    "@xsolla/xui-input-copy": "0.202.3",
+    "@xsolla/xui-layout": "0.202.3",
+    "@xsolla/xui-link": "0.202.3",
+    "@xsolla/xui-notification": "0.202.3",
+    "@xsolla/xui-select": "0.202.3",
+    "@xsolla/xui-spinner": "0.202.3",
+    "@xsolla/xui-status": "0.202.3",
+    "@xsolla/xui-typography": "0.202.3",
+    "react": "19",
+    "react-dom": "19",
+    "styled-components": "6",
     "viem": "^2.55.13"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
   }
 }
