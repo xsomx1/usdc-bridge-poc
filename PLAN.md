@@ -83,11 +83,22 @@ mode. See ADR-0002.
 - [x] T6.3 Wired into `App.tsx`: `Button` (connect), `Status` (connected/wrong-network),
       `InputCopy readOnly` (address), `Notification type="inline"` (wrong-network action, errors)
 
-**Verified:** `bun run build` green; in-browser, clicking "Connect MetaMask" with no injected
-wallet shows the expected inline error notification (confirms the error path end-to-end). **Not
-verified:** the actual MetaMask connect/switch-network/`accountsChanged` flow — the in-app preview
-browser has no MetaMask extension. Needs a manual pass in a real browser with the funded wallet
-before E6 is considered fully proven live.
+**Verified live** in a real Chrome window (Claude in Chrome) with the funded wallet
+`0x26e99F6e94B983e0adD40E296D4f5788e67C9F69`:
+- No-wallet error path (in the sandboxed preview, no extension) — inline error notification renders
+- Real MetaMask connect — `Status` → "Connected", address shown correctly in `InputCopy`
+- Network guard both directions — switched wallet to Ethereum Mainnet via `wallet_switchEthereumChain`
+  → `chainChanged` fired → `Status` flipped to "Wrong network" + inline notification with a
+  "Switch network" action appeared; clicking it called `switchToL1()` → back to "Connected", no
+  MetaMask prompt needed since Sepolia was already an added chain
+- `accountsChanged` on disconnect — revoked the site's permissions
+  (`wallet_revokePermissions`) → UI reset to the initial "Connect MetaMask" state
+
+Bug found and fixed during this live pass: the page rendered with **no background color** in a
+real browser (white canvas, near-invisible light text) — `XUIProvider` only provides theme tokens,
+it never paints a background itself. The sandboxed preview browser used while building E5/E6
+masked this (it defaults to a black canvas). Fixed by applying
+`useDesignSystem().theme.colors.background.primary` to the page wrapper. See ADR-0002 D11.
 
 ## Open follow-ups (not part of this POC)
 
@@ -97,9 +108,6 @@ before E6 is considered fully proven live.
       ZKsync OS chains (362,493 estimated vs 431,200 required).
 - [ ] Upstream issue: `DepositQuote.mintValue` deprecation points at `fees.components?.mintValue`,
       which does not exist on `DepositFeeBreakdown`; the value is at `fees.mintValue`.
-- [ ] E6's MetaMask connect/network-switch flow needs manual verification in a real browser with
-      the funded wallet — not testable in the headless preview browser (no extension support).
-
 ## Review gate
 
 E1–E4 committed on `feat/usdc-bridge-sepolia-to-xsolla-zk` (pushed). E5 committed on

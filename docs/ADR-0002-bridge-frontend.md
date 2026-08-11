@@ -123,6 +123,20 @@ our buttons). `isWrongNetwork` is derived (`chainId !== l1Chain.id`, from `src/c
 a memoized viem `WalletClient` (`createWalletClient({chain: l1Chain, transport: custom(...)})`) for
 E7/E8 to send transactions with, only once connected on the right chain.
 
+### D11. The app, not `XUIProvider`, must paint the page background
+
+`XUIProvider` is a pure context provider: it injects fonts and typography CSS but never sets a
+background color on `html`/`body`/any wrapper. Confirmed by reading `node_modules/@xsolla/xui-core`
+directly — `XUIProvider` renders `FontLoader` + `TypographyStyleLoader` + `children`, nothing else.
+Dark mode is therefore text-only unless the app supplies its own background, and the failure mode
+is silent: light-on-transparent text over the browser's default **white** canvas, not an error.
+
+Fix: `useDesignSystem().theme.colors.background.primary` (dark token `#1b2628`) applied to the
+outermost `PageWrapper` via styled-components. Caught late — the in-app preview browser used while
+building E5/E6 happened to render a black canvas by default, masking the bug; it only surfaced
+once tested in a real Chrome window (white background by default). Lesson: verify toolkit-dark-mode
+pages in a real browser, not just the sandboxed preview.
+
 ## Consequences
 
 - Frontend and CLI POC share one `package.json` and one source of on-chain truth

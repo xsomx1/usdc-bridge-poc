@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { useDesignSystem } from '@xsolla/xui-core';
 import { Typography } from '@xsolla/xui-typography';
 import { FieldGroup } from '@xsolla/xui-field-group';
 import { Button } from '@xsolla/xui-button';
@@ -12,19 +13,26 @@ import { useWallet } from './wallet/useWallet';
 
 // Viewport centering is the one job the toolkit has no component for —
 // see ADR-0002 D3. Everything below this wrapper is FieldGroup-only.
-const PageWrapper = styled.div`
+//
+// XUIProvider only provides theme *tokens* (context + injected fonts/typography
+// CSS) — it never paints a page background itself (see ADR-0002 D11). Without
+// this, dark mode is text-only: light-on-transparent over the browser's default
+// white canvas.
+const PageWrapper = styled.div<{ $background: string }>`
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 24px;
+  background-color: ${(props) => props.$background};
 `;
 
 export function App() {
   const { status, address, isWrongNetwork, error, connect, switchToL1 } = useWallet();
+  const { theme } = useDesignSystem();
 
   return (
-    <PageWrapper>
+    <PageWrapper $background={theme.colors.background.primary}>
       <FieldGroup flexDirection="column" gap={24} maxWidth={480} padding={32}>
         <Typography variant="h2" color="primary">
           USDC Bridge
