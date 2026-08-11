@@ -1,0 +1,16 @@
+{
+  "name": "usdc-bridge-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "POC: bridge USDC from Ethereum Sepolia to Xsolla ZK Testnet via @matterlabs/zksync-js",
+  "scripts": {
+    "bridge:dry": "bun run src/bridge.ts --dry-run",
+    "bridge:send": "bun run src/bridge.ts --send",
+    "verify": "bun run src/verify.ts"
+  },
+  "dependencies": {
+    "@matterlabs/zksync-js": "0.0.20",
+    "viem": "^2.55.13"
+  }
+}
