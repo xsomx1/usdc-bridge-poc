@@ -182,3 +182,8 @@ the shape is otherwise correct.
   `web/src`. `src/bridge.ts` / `src/diag.ts` predate any tsconfig and have pre-existing strict-mode
   errors unrelated to the frontend; they run fine under `bun run` (which doesn't type-check) and
   are out of scope for E5 to fix.
+- `useBridgeSend`'s L2-status poll (D14) has no timeout or cancel — if a deposit ever got stuck the
+  way the CLI POC's first attempt did (ADR-0001), the UI would poll `deposits.status()` forever
+  with only a page reload to escape. Acceptable for this POC (the `L2_GAS_LIMIT` pin exists
+  specifically to prevent that failure mode); a real product would need a timeout and a manual
+  "check status" fallback.
